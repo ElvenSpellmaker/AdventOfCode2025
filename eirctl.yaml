@@ -1,0 +1,55 @@
+---
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Ensono/eirctl/refs/heads/main/schemas/schema_v1.json
+
+contexts:
+  php8:
+    container:
+      name: mirror.gcr.io/php:8.3.8-cli
+      shell: bash
+      shell_args:
+        - -c
+    envfile:
+      exclude:
+        - LC_ALL
+
+  yamllint:
+    container:
+      name: mirror.gcr.io/toolhippie/yamllint:1.37.1
+      entrypoint: /usr/bin/env
+      shell: bash
+      shell_args:
+        - -c
+    envfile:
+      exclude:
+        - PATH
+        - HOME
+        - which_declare
+        - BASH_FUNC_
+
+tasks:
+  day:
+    context: php8
+    command:
+      - |
+        echo "{{ index .ArgsList 0 }}" | grep '^[0-9]\+$' >&/dev/null
+        RET_VAL="$?"
+        if [ $RET_VAL -ne 0 ] || [ "{{ index .ArgsList 0 }}" -lt 1 ] || [ "{{ index .ArgsList 0 }}" -gt 12 ]; then
+          >&2 echo "Expected the Day to be a number from 1-12, got '{{ index .ArgsList 0 }}'..!"
+          exit 1
+        fi
+
+        if [ "{{ index .ArgsList 1 }}" -ne 1 ] && [ "{{ index .ArgsList 1 }}" -ne 2 ]; then
+          >&2 echo "Expected the Part to be '1' or '2', got '{{ index .ArgsList 1 }}'..!"
+          exit 1
+        fi
+
+        php d{{ index .ArgsList 0 }}/d{{ index .ArgsList 0 }}p{{ index .ArgsList 1 }}.php
+
+  lint:yaml:
+    context: yamllint
+    description: |
+      Perform YAML Linting, pass additional arguments via -- stdin
+
+      By default the utility uses `yamllint.conf`
+    command:
+      - yamllint -s -c {{ or (index . "YamlLintConf") "yamllint.conf" }} . {{ .Args }}
