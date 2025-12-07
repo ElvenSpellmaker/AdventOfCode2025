@@ -4,7 +4,7 @@ $file = explode("\n", rtrim(file_get_contents(__DIR__ . '/d6.txt')));
 
 preg_match_all('%[\+|\*]%', array_pop($file), $operators);
 
-$file = array_map(fn($i) => str_split($i), $file);
+$file = array_map(str_split(...), $file);
 
 $sum = 0;
 
